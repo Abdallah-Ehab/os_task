@@ -4,17 +4,27 @@ class MemoryAllocator:
         self.memory = [{"start": 0, "end": size - 1, "process": None}]
 
     def request_memory(self, process, size, strategy):
+        strategy = strategy.upper()
         free_blocks = [b for b in self.memory if b["process"] is None]
-        if strategy.upper() == "W":
+
+        if strategy == "W":
             free_blocks.sort(key=lambda x: x["end"] - x["start"], reverse=True)
+        elif strategy == "B":
+            free_blocks.sort(key=lambda x: x["end"] - x["start"])
+        elif strategy == "F":
+            pass  # no sorting needed
         else:
-            print("Only worst-fit (W) strategy is supported.")
+            print("Unsupported strategy. Use W (Worst), B (Best), or F (First).")
             return
 
         for block in free_blocks:
             block_size = block["end"] - block["start"] + 1
             if block_size >= size:
-                new_block = {"start": block["start"], "end": block["start"] + size - 1, "process": process}
+                new_block = {
+                    "start": block["start"],
+                    "end": block["start"] + size - 1,
+                    "process": process
+                }
                 block["start"] += size
                 if block["start"] > block["end"]:
                     self.memory.remove(block)
@@ -29,9 +39,9 @@ class MemoryAllocator:
         for block in self.memory:
             if block["process"] == process:
                 block["process"] = None
-                print(f"Memory released from process {process}")
+                print(f"Memory released for process {process}")
                 return
-        print(f"Process {process} not found.")
+        print(f"No memory allocated to process {process}")
 
     def compact_memory(self):
         used = [b for b in self.memory if b["process"] is not None]
@@ -41,7 +51,11 @@ class MemoryAllocator:
         current = 0
         for b in used:
             size = b["end"] - b["start"] + 1
-            self.memory.append({"start": current, "end": current + size - 1, "process": b["process"]})
+            self.memory.append({
+                "start": current,
+                "end": current + size - 1,
+                "process": b["process"]
+            })
             current += size
 
         if free_space > 0:
